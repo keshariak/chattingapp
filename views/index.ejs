@@ -1,0 +1,257 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link
+    href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css"
+    rel="stylesheet"
+/>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+ <div class="main h-screen w-full flex overflow-hidden md:flex-row flex-col">
+  <!-- left div -->
+  <div class="left md:h-screen h-2/6 md:w-4/12 w-full bg-slate-300 border-x-2 overflow-hidden">
+    <!-- left top -->
+    <div class="top flex bg-slate-300 border-b-[3px] items-center">
+     
+      <div class="user p-8 w-8/12 h-[40px] flex  items-center  ">
+      <img class="w-10 h-10 rounded-full overflow-hidden mr-3 object-cover border-slate-500 border-2 shadow-slate-300 shadow-inner" src=" <%= user.profilephoto%>" alt="">
+      <h1 class="text-cyan-900 text-lg font-bold"> <%= user.username%></h1>
+      </div>
+      <div class="function  ml-auto p-3 flex gap-6">
+        <button onclick="joinGroup()">
+          <i class="ri-user-add-line"></i>
+        </button>
+        <button onclick="createNewGroup()">
+          <i class="ri-add-circle-fill text-2xl text-slate-700"></i>
+
+        </button>
+        
+      </div>
+     
+    
+      
+    </div>
+    <!-- <div class="search w-full h-[40px] bg-white p-1">
+      <input class="w-full h-full bg-slate-200 border-spacing-3 rounded p-3" type="text" placeholder="Search or Start new chat">
+    </div> -->
+    <!-- left bottom -->
+    <div id="left-bottom" class="bottom  w-full overflow-auto h-[calc(100%-50px)]  ">
+
+      
+       <!-- <div onclick="" class="user p-8 pl-2 w-full h-[40px] bg-white flex  items-center border-b-[3px] ">
+        <img class="w-12 h-12 rounded-full object-cover overflow-hidden mr-3" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRLe5PABjXc17cjIMOibECLM7ppDwMmiDg6Dw&usqp=CAU" alt="">
+        <h1 class="text-black text-lg ">username</h1>
+      </div> -->
+       
+  
+      
+      
+      
+    </div>
+  </div>
+
+
+  <!-- right div -->
+  <div class="right md:h-screen h-4/6 md:w-8/12 w-full bg-slate-700 hidden">
+    <div class="top">
+      <div class="user p-8 w-full h-[40px] bg-slate-400 flex  items-center ">
+        <img class="currentChatUserImg w-10 h-10 rounded-full object-cover overflow-hidden mr-3 border-2 border-gray-500" src="" alt="">
+        <h1 class=" currentChatUsername text-cyan-900 text-lg font-bold">XXXXXX</h1>
+        </div>
+    </div>
+    <div class="middle conversationArea w-full h-[calc(100%-110px)] p-2 overflow-y-auto">
+      <!-- group message template -->
+      <div class=" bg-slate-100 w-fit p-2 rounded mt-2 rounded-tl-none max-w-[50%] ">
+        <div class="msginfo  w-full">
+          <p class="text-sm text-red-400">username</p>
+        </div>
+        <h1>Group message</h1>
+        <div class="time text-xs flex justify-end">
+          <h6 class="text-xs">04:60</h6>
+        </div>
+      </div>
+
+      
+
+    </div>
+
+    <form action="" id="form" class=" bottom px-2 w-full h-[40px] flex items-center justify-center">
+      
+
+      <input class="h-full w-9/12 mr-2 rounded p-2" type="text" placeholder="Enter message here . . . .">
+      <button  class="h-full w-3/12 btn rounded bg-green-600 text-white">Send</button>
+    </form>
+
+
+  </div>
+
+ </div>
+ <script src="/socket.io/socket.io.js"></script>
+
+ <script>
+   var socket = io(); 
+  socket.emit('join-server',{
+   username:`<%= user.username%>`,
+   img:`<%=user.profilephoto%>`
+  })
+  socket.on('new-user-join', userDetail=>{
+   appendnewuser( userDetail.img,userDetail.username)
+  })
+    var currentChatUser= null
+   
+   const sender =`<%=user.username%>`
+
+  document.querySelector("#form").addEventListener("submit",function(e){
+    e.preventDefault()
+    var message = document.querySelector("input").value; 
+    if(message.trim()=== ""){
+      return
+    }else{
+      sendMessage()
+    }
+
+    
+
+  })
+  function incomingMessage(msg){
+    const template=`<div class="incomimgMessage bg-slate-100 w-fit p-2 rounded mt-2 rounded-tl-none ">
+         ${msg}
+         
+      </div>`
+      document.querySelector('.conversationArea').innerHTML+= template
+    
+  }
+
+  function outgoingMessage(msg){
+    const template=` <div class="outgoingMessage bg-slate-100 w-fit p-2 rounded mt-2 ml-auto rounded-br-none">
+       ${msg}
+      </div>`
+      document.querySelector('.conversationArea').innerHTML+= template
+  }
+
+  function groupIncomingMessage(username, message, time){
+    const template= `
+    <div class=" bg-slate-100 w-fit p-2 rounded mt-2 rounded-tl-none max-w-[50%] ">
+        <div class="msginfo  w-full">
+          <p class="text-sm text-red-400">${username}</p>
+        </div>
+        <h1> ${message}</h1>
+        <div class="time text-xs flex justify-end">
+          <h6 class="text-xs">${time.slice(11,16)}</h6>
+        </div>
+      </div>`
+      document.querySelector('.conversationArea').innerHTML+= template
+
+  }
+
+  function sendMessage(){
+    var message = document.querySelector("input").value;
+    
+    outgoingMessage(message)
+    document.querySelector("input").value=''
+
+    socket.emit('private-chat', {
+      message,
+      receiver:currentChatUser,
+      sender: `<%= user.username %>`
+
+    })
+  }
+
+  socket.on('receive-private-chat', messageObject=>{
+    if(rec)
+    incomingMessage(messageObject.message)
+
+  })
+
+ 
+  function appendnewuser(img, username){
+    if (document.querySelector(`#${username}`)){
+      return
+    }
+    var temt=`
+    <div onclick="setCurrentChat('${img}', '${username}',)" id="${username}" class="user p-8 pl-2 w-full h-[40px] bg-white flex  items-center border-b-[3px] ">
+        <img class="w-12 h-12 rounded-full object-cover  overflow-hidden mr-3 border-slate-500 border-2 " src="${img}" alt="">
+        <h1 class="text-black text-lg ">${username}</h1>
+      </div>
+      `
+    document.querySelector('#left-bottom').innerHTML+=temt
+  }
+
+  function setCurrentChat(img, username){
+    document.querySelector(".currentChatUserImg").setAttribute('src' ,img)
+    document.querySelector(".currentChatUsername").textContent=username
+    // document.querySelector('.right').classList.add('d-block')
+    document.querySelector('.right').classList.replace('hidden','d-block')
+    currentChatUser= username
+
+    socket.emit('fetch-conversation', {
+        receiver: username,
+        sender: sender
+      })
+  }
+  socket.on('send-conversation', allMessages => {
+      document.querySelector('.conversationArea').innerHTML = ""
+      allMessages.forEach(message => {
+
+        if (message.sender == sender) {
+          outgoingMessage(message.msg)
+        } else {
+          incomingMessage(message.msg)
+        }
+      });
+    })
+
+
+   // new code??
+   socket.on('send-conversation-group', allMessages => {
+      document.querySelector('.conversationArea').innerHTML = ""
+      allMessages.forEach(message => {
+
+        if (message.sender == sender) {
+          outgoingMessage(message.msg)
+        } else {
+          groupIncomingMessage(message.sender,message.msg, message.createdAt)
+        }
+      });
+    })
+
+   //new code end
+
+
+
+  function createNewGroup(){
+    const groupName= prompt("enter group name.")
+    if(!groupName){
+      return
+    }
+    
+    socket.emit("createNewGroup",{sender , groupName})
+  }
+
+  socket.on('groupCreated', newGroup=>{
+    console.log(newGroup)
+    appendnewuser(newGroup.profilephoto, newGroup.name)
+  })
+
+  socket.on('group-joined', groupDetails=>{
+    appendnewuser(groupDetails.profilephoto, groupDetails.name)
+  })
+
+  function joinGroup(){
+    const groupName= prompt('enter group name to join')
+    console.log(groupName)
+    if(!groupName){
+      return
+    }
+    socket.emit('join-group',{
+      groupName, sender
+    })
+  }
+  
+ </script>
+</body>
+</html>
